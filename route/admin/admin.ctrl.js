@@ -119,7 +119,7 @@ exports.allow = async (req, res) => {
     const lastPost = await allowPost.findOne().sort({ idx: -1 }).limit(1);
     let idx;
     // eslint-disable-next-line no-unused-expressions
-    if (lastPost === false) {
+    if (lastPost === null) {
       idx = 1;
     } else {
       console.log(lastPost);
