@@ -19,5 +19,6 @@ const rejectPost = Schema({
 },
 {
   collection: 'rejectPost',
-},);
+});
+
 module.exports = mongoose.model('rejectPost', rejectPost);

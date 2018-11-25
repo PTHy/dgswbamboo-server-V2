@@ -1,5 +1,7 @@
+import { camelKeys } from 'change-object-case';
 import allowPost from '../../database/models/allowPost';
 import waitPost from '../../database/models/waitPost';
+import rejectPost from '../../database/models/rejectPost';
 
 exports.count = async (req, res) => {
   try {
@@ -20,18 +22,36 @@ exports.count = async (req, res) => {
 
 exports.sendPost = async (req, res) => {
   try {
-    const idx = await waitPost.find().sort({ idx: -1 }).limit(1);
     const {
-      images,
       ...data
-    } = req.body;
-    console.log(idx);
-    console.log(idx === false);
+    } = camelKeys(req.body);
+    const overlapReject = await rejectPost.find({ personalString: data.personalString });
+    const overlapWait = await waitPost.find({ personalString: data.personalString });
+    const overlapCheck = Object.assign(
+      overlapReject.filter(e => e.isRead === false),
+      overlapWait.filter(e => e.isChange === false),
+    );
+    if (overlapCheck.length) {
+      const result = {
+        status: 401,
+        error: '개인 확인 문자열 중복, 바꿔주세요',
+      };
+      res.status(200).json(result);
+      return;
+    }
     // eslint-disable-next-line no-unused-expressions
-    idx === false ? data.idx = 1 : data.idx = idx[0].idx + 1;
+    const lastPost = await waitPost.findOne().sort({ idx: -1 });
+    if (lastPost === null) {
+      data.idx = 1;
+    } else {
+      data.idx = lastPost.idx + 1;
+    }
+    console.log(data.idx);
     await waitPost.create(data);
+    console.log(data);
     const result = {
       status: 200,
+      desc: '성공',
     };
     res.status(200).json(result);
   } catch (error) {
@@ -71,3 +91,59 @@ exports.getPost = async (req, res) => {
     res.status(200).json(result);
   }
 };
+
+exports.findRejectPost = async (req, res) => {
+  const {
+    personalString,
+  } = camelKeys(req.params);
+  try {
+    const post = await rejectPost.findOne({ personalString, isRead: false });
+    if (post) {
+      res.status(200).json({
+        status: 200,
+        desc: '조회 성공',
+        post,
+      });
+    } else {
+      res.status(200).json({
+        status: 404,
+        desc: '조회 실패 없어요 그런거',
+      });
+    }
+  } catch (error) {
+    const result = {
+      status: 500,
+      error: error.message,
+    };
+    console.log(error.message);
+    res.status(200).json(result);
+  }
+};
+
+exports.changeIsRejectPostRead = async (req, res) => {
+  const {
+    personalString,
+  } = camelKeys(req.params);
+  try {
+    const post = await rejectPost.findOne({ personalString });
+    if (post) {
+      await rejectPost.update({ personalString, isRead: false }, { $set: { isRead: true } });
+      res.status(200).json({
+        status: 200,
+        desc: '상태 변경됨',
+      });
+    } else {
+      res.status(200).json({
+        status: 404,
+        desc: '그런건 없어',
+      });
+    }
+  } catch (error) {
+    const result = {
+      status: 500,
+      error: error.message,
+    };
+    console.log(error.message);
+    res.status(200).json(result);
+  }
+} 
