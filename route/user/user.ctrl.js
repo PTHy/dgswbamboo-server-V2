@@ -25,11 +25,17 @@ exports.sendPost = async (req, res) => {
     const {
       ...data
     } = camelKeys(req.body);
-    const overlapReject = await rejectPost.find({ personalString: data.personalString });
-    const overlapWait = await waitPost.find({ personalString: data.personalString });
+    const overlapReject = await rejectPost.find({
+      personalString: data.personalString,
+      isRead: false,
+    });
+    const overlapWait = await waitPost.find({
+      personalString: data.personalString,
+      isChange: false,
+    });
     const overlapCheck = Object.assign(
-      overlapReject.filter(e => e.isRead === false),
-      overlapWait.filter(e => e.isChange === false),
+      overlapReject,
+      overlapWait,
     );
     if (overlapCheck.length) {
       const result = {
@@ -146,4 +152,4 @@ exports.changeIsRejectPostRead = async (req, res) => {
     console.log(error.message);
     res.status(200).json(result);
   }
-} 
+};
