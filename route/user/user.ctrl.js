@@ -75,7 +75,7 @@ exports.getPost = async (req, res) => {
     count,
   } = req.params;
   try {
-    const post = await allowPost.find({}).sort({ idx: -1 }).limit(5).skip(parseInt(count, 10));
+    const post = await allowPost.find({}, { __v: false, _id: false }).sort({ idx: -1 }).limit(5).skip(parseInt(count, 10));
     if (post.length) {
       res.status(200).json({
         status: 200,
@@ -103,7 +103,7 @@ exports.findRejectPost = async (req, res) => {
     personalString,
   } = camelKeys(req.params);
   try {
-    const post = await rejectPost.findOne({ personalString, isRead: false });
+    const post = await rejectPost.findOne({ personalString, isRead: false }, { __v: false, _id: false });
     if (post) {
       res.status(200).json({
         status: 200,
@@ -133,7 +133,7 @@ exports.changeIsRejectPostRead = async (req, res) => {
   try {
     const post = await rejectPost.findOne({ personalString });
     if (post) {
-      await rejectPost.update({ personalString, isRead: false }, { $set: { isRead: true } });
+      await rejectPost.updateOne({ personalString, isRead: false }, { $set: { isRead: true } });
       res.status(200).json({
         status: 200,
         desc: '상태 변경됨',

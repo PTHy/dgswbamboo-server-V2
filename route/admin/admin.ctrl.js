@@ -49,11 +49,13 @@ exports.reject = async (req, res) => {
   const {
     idx,
     reason,
-    admin,
   } = req.body;
+  const {
+    admin,
+  } = req.decoded;
   try {
     const post = await waitPost.findOne({ idx });
-    if (!post || post.inChange === true) {
+    if (!post || post.isChange === true) {
       const result = {
         status: 404,
         desc: '해당 idx의 대기 글이 없어요',
@@ -106,8 +108,8 @@ exports.reject = async (req, res) => {
 exports.allow = async (req, res) => {
   const {
     idx: id,
-    admin,
-  } = req.body;
+  } = req.params;
+  const { admin } = req.decoded;
   console.log(id);
   try {
     const post = await waitPost.findOne({ idx: id });
@@ -205,7 +207,10 @@ exports.getPost = async (req, res) => {
         res.status(200).json({
           stats: 200,
           count: await waitPost
-            .find({ isChange: false })
+            .find({ isChange: false }, {
+              __v: false,
+              _id: false,
+            })
             .sort({ idx: -1 })
             .limit(5)
             .skip(parseInt(count, 10)),
@@ -215,7 +220,10 @@ exports.getPost = async (req, res) => {
         res.status(200).json({
           stats: 200,
           count: await rejectPost
-            .find({})
+            .find({}, {
+              __v: false,
+              _id: false,
+            })
             .sort({ idx: -1 })
             .limit(5)
             .skip(parseInt(count, 10)),
@@ -225,7 +233,10 @@ exports.getPost = async (req, res) => {
         res.status(200).json({
           stats: 200,
           count: await allowPost
-            .find({})
+            .find({}, {
+              __v: false,
+              _id: false,
+            })
             .sort({ idx: -1 })
             .limit(5)
             .skip(parseInt(count, 10)),
