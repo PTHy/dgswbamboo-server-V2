@@ -2,6 +2,8 @@ import rejectPost from '../../database/models/rejectPost';
 import waitPost from '../../database/models/waitPost';
 import allowPost from '../../database/models/allowPost';
 
+const facebook = require('../../lib/fackbook');
+
 exports.count = async (req, res) => {
   const {
     type,
@@ -67,7 +69,8 @@ exports.reject = async (req, res) => {
       writerName,
       writerPicture,
       writerUrl,
-      images,
+      imgs,
+      tumb,
     } = post;
 
     await rejectPost.create({
@@ -81,9 +84,10 @@ exports.reject = async (req, res) => {
       type,
       reason,
       admin,
-      images,
+      imgs,
+      tumb,
     });
-    await waitPost.update({ idx }, { $set: { isChange: true } });
+    await waitPost.updateOne({ idx }, { $set: { isChange: true } });
     const result = {
       status: 200,
       desc: 'successful request',
@@ -107,7 +111,7 @@ exports.allow = async (req, res) => {
   console.log(id);
   try {
     const post = await waitPost.findOne({ idx: id });
-    if (!post || post.inChange === true) {
+    if (!post || post.isChange === true) {
       const result = {
         status: 404,
         desc: '해당 idx의 대기 글이 없어요',
@@ -132,21 +136,49 @@ exports.allow = async (req, res) => {
       writerName,
       writerPicture,
       writerUrl,
-      images,
+      imgs,
+      tumb,
     } = post;
-
+    let posting = `#대소고_${idx}번째_이야기 \n${writeDate.toLocaleString()}\n\n\n${content}`;
+    if (type) {
+      posting += `\n\n\n\n${writerName}님(${writerUrl}) 제보`;
+    } else {
+      posting += '\n\n\n\n 익명 제보';
+    }
+    if (imgs.length) {
+      const fb = await facebook.uploadWithImg(imgs, posting);
+      if (fb.type === 'error') {
+        const result = {
+          status: 500,
+          error: fb.error,
+        };
+        res.status(200).json(result);
+        return;
+      }
+    } else {
+      const fb = await facebook.uploadWithoutImg(posting);
+      if (fb.type === 'error') {
+        const result = {
+          status: 500,
+          error: fb.error,
+        };
+        res.status(200).json(result);
+        return;
+      }
+    }
     await allowPost.create({
       idx,
       content,
       admin,
-      images,
+      imgs,
+      tumb,
       writeDate,
       type,
       writerName,
       writerPicture,
       writerUrl,
     });
-    await waitPost.update({ idx: id }, { $set: { isChange: true } });
+    await waitPost.updateOne({ idx: id }, { $set: { isChange: true } });
     const result = {
       status: 200,
       desc: 'successful request',
