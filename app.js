@@ -22,6 +22,8 @@ app.use(bodyParser.json());
 
 app.use('/', require('./route'));
 
+app.use('/public', express.static('public'));
+
 server.listen(PORT, () => {
   db();
   console.log('server runing');
