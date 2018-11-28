@@ -43,7 +43,7 @@ Admin.methods.checkPassword = function (pw) {
   const resultPw = crypto.createHmac('sha1', secret)
     .update(pw)
     .digest('base64');
-  return this.password == resultPw;
+  return this.password === resultPw;
 };
 
 // eslint-disable-next-line func-names
@@ -52,7 +52,7 @@ Admin.methods.urgentToken = function () {
     jwt.sign({
       // eslint-disable-next-line no-underscore-dangle
       _id: this._id,
-      user: this.name,
+      admin: this.name,
     },
     secret, {
       issuer: 'dgswbamboo.oa.to',
